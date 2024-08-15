@@ -3,21 +3,31 @@ import requests
 from azure.storage.blob import BlobServiceClient
 import azure.functions as func
 
-
 # Configuration
-STORAGE_ACCOUNT_KEY = "8Q/SSR7RuavrPA5tFlQSrCNtvFwTbUZSg9742w+GgfB09h4hkSZKJtYrqvLfsPXq3irN+cMBoRmh+ASt6jlgwQ=="
-CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=rawdat1;AccountKey=8Q/SSR7RuavrPA5tFlQSrCNtvFwTbUZSg9742w+GgfB09h4hkSZKJtYrqvLfsPXq3irN+cMBoRmh+ASt6jlgwQ==;EndpointSuffix=core.windows.net"
-CONTAINER_NAME = "yahoo-finance-data"
-STORAGE_ACCOUNT_NAME = "rawdat1"
-
-
+STORAGE_ACCOUNT_KEY = "fZ722WzZLOn8HqWNysUG9hnM6gfAUtv5t57uneRfad9w8J8kHa6rlLrkBV/EPjudVUHcI8s/h5xH+AStWAAXJw=="
+CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=rawdata001;AccountKey=fZ722WzZLOn8HqWNysUG9hnM6gfAUtv5t57uneRfad9w8J8kHa6rlLrkBV/EPjudVUHcI8s/h5xH+AStWAAXJw==;EndpointSuffix=core.windows.net"
+CONTAINER_NAME = "mst"
+STORAGE_ACCOUNT_NAME = "rawdata001"
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Processing HTTP request to upload CSV file.')
 
     try:
-        # Download the CSV file from the given URL
-        response = requests.get('https://finance.yahoo.com/quote/CRM/history/')
+        # Extract start_date and end_date from the HTTP request parameters
+        start_date = req.params.get('2024-01-01')
+        end_date = req.params.get('2024-05-05')
+
+        if not start_date or not end_date:
+            return func.HttpResponse(
+                "Please provide both start_date and end_date parameters in the format YYYY-MM-DD.",
+                status_code=400
+            )
+
+        # Use start_date and end_date in your API request
+        yahoo_finance_url = f"https://finance.yahoo.com/quote/CRM/history?period1={start_date}&period2={end_date}"
+
+        # Fetch the data from Yahoo Finance
+        response = requests.get(yahoo_finance_url)
         response.raise_for_status()  # Raise an error for bad responses
 
         # Connect to Azure Blob Storage
@@ -37,3 +47,5 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     except Exception as e:
         logging.error(f"Error: {e}")
         return func.HttpResponse(f"An error occurred: {e}", status_code=500)
+
+
